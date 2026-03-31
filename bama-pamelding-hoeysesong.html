@@ -33,8 +33,9 @@
   .field:last-child{margin-bottom:0}
   label.fl{font-size:13px;font-weight:600;color:var(--text-mid)}
   .req{color:var(--gold);margin-left:2px}
-  input[type="text"]{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;outline:none;width:100%}
-  input[type="text"]:focus{border-color:var(--green-acc);background:var(--white);box-shadow:0 0 0 3px rgba(61,143,102,0.11)}
+  .opt{font-size:11px;font-weight:400;color:var(--text-light);margin-left:4px}
+  input[type="text"],input[type="tel"]{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;outline:none;width:100%}
+  input[type="text"]:focus,input[type="tel"]:focus{border-color:var(--green-acc);background:var(--white);box-shadow:0 0 0 3px rgba(61,143,102,0.11)}
   input.invalid{border-color:var(--error)}
   .err{font-size:12px;color:var(--error);display:none;margin-top:3px}
   .area-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
@@ -115,6 +116,11 @@
         <input type="text" id="avdeling" placeholder="Skriv inn svaret">
         <div class="err" id="err-avdeling">Fyll inn avdeling</div>
       </div>
+      <div class="field">
+        <label class="fl" for="telefon">3. Mobilnummer <span class="req">*</span></label>
+        <input type="tel" id="telefon" placeholder="f.eks. 912 34 567" autocomplete="tel">
+        <div class="err" id="err-telefon">Fyll inn gyldig mobilnummer (8 siffer)</div>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -123,7 +129,7 @@
       <div><div class="card-title">Hva kan du hjelpe til med?</div><div class="card-sub">Velg ett eller begge</div></div>
     </div>
     <div class="card-body">
-      <label class="fl" style="margin-bottom:10px;display:block;">3. Velg område <span class="req">*</span></label>
+      <label class="fl" style="margin-bottom:10px;display:block;">4. Velg område <span class="req">*</span></label>
       <div class="area-group">
         <div class="area-item">
           <input type="checkbox" id="a_term" name="area" value="Terminal">
@@ -219,17 +225,23 @@ function onShiftChange(w) {
 function selAll(w) { document.querySelectorAll(`input[name="vakt${w}"]`).forEach(c=>c.checked=true); onShiftChange(w); }
 function clrAll(w) { document.querySelectorAll(`input[name="vakt${w}"]`).forEach(c=>c.checked=false); onShiftChange(w); }
 
+function validateTelefon(val) {
+  const digits = val.replace(/\s/g, '');
+  return /^[0-9]{8}$/.test(digits);
+}
+
 function validate() {
   let ok = true;
   function req(id, errId, fn) {
     const el = document.getElementById(id);
-    const fail = fn ? !fn(el) : !el.value.trim();
+    const fail = fn ? !fn(el.value) : !el.value.trim();
     el.classList.toggle('invalid', fail);
     document.getElementById(errId).style.display = fail ? 'block' : 'none';
     if (fail) ok = false;
   }
   req('navn','err-navn');
   req('avdeling','err-avdeling');
+  req('telefon','err-telefon', validateTelefon);
   const areas = [...document.querySelectorAll('input[name="area"]:checked')];
   document.getElementById('err-area').style.display = areas.length===0 ? 'block' : 'none';
   if (areas.length===0) ok = false;
@@ -255,6 +267,7 @@ async function sendSkjema() {
   const payload = {
     Navn: document.getElementById('navn').value.trim(),
     Avdeling: document.getElementById('avdeling').value.trim(),
+    Telefon: document.getElementById('telefon').value.trim(),
     Omraader: [...document.querySelectorAll('input[name="area"]:checked')].map(c=>c.value).join(', '),
     ...vakter,
     Tidspunkt: new Date().toISOString()
@@ -273,7 +286,7 @@ async function sendSkjema() {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-['navn','avdeling'].forEach(id => {
+['navn','avdeling','telefon'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     document.getElementById(id).classList.remove('invalid');
     document.getElementById('err-'+id).style.display = 'none';
